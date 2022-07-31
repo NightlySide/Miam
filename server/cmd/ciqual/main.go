@@ -41,6 +41,28 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// drop the data tables
+	err = conn.Delete(&ciqual.Food{}, "1=1").Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = conn.Delete(&ciqual.FoodGroup{}, "1=1").Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = conn.Delete(&ciqual.Component{}, "1=1").Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = conn.Delete(&ciqual.Composition{}, "1=1").Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = conn.Delete(&ciqual.Source{}, "1=1").Error
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// start async
 	var wg sync.WaitGroup
 
