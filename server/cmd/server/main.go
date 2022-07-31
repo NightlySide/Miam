@@ -1,31 +1,31 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
+	"io.github.nightlyside/miam/pkg/api"
+	"io.github.nightlyside/miam/pkg/config"
 )
 
+var ConfigPathFlag = flag.String("config", "", "config file path")
+
 func main() {
-	e := echo.New()
+	flag.Parse()
 
-	// Logger middleware
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "[${time_rfc3339}] - [${method}] ${uri} (${status}) ${error}\n",
-	}))
+	// load config
+	cfg, err := config.LoadConfig(*ConfigPathFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// Recover middleware
-	e.Use(middleware.Recover())
+	// create router
+	router := api.CreateRouter(cfg)
 
-	// CORS
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"*"},
-		AllowCredentials: true,
-	}))
-
-	log.Info("Starting server of :1234")
-	http.ListenAndServe(":1234", e)
+	// start server
+	listenOn := fmt.Sprintf("%s:%d", cfg.Api.Host, cfg.Api.Port)
+	log.Infof("Starting server of %s", listenOn)
+	http.ListenAndServe(listenOn, router)
 }
