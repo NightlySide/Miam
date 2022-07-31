@@ -15,13 +15,12 @@ import "encoding/xml"
 */
 
 type Food struct {
-	XMLName         xml.Name `xml:"ALIM"`
-	Code            int      `xml:"alim_code"`
-	NameFr          string   `xml:"alim_nom_fr"`
-	NameEng         string   `xml:"alim_nom_eng"`
-	GroupCode       int      `xml:"alim_grp_code"`
-	SubGroupCode    int      `xml:"alim_ssgrp_code"`
-	SubSubGroupCode int      `xml:"alim_ssssgrp_code"`
+	Code            int    `xml:"alim_code"`
+	NameFr          string `xml:"alim_nom_fr"`
+	NameEng         string `xml:"alim_nom_eng"`
+	GroupCode       int    `xml:"alim_grp_code"`
+	SubGroupCode    int    `xml:"alim_ssgrp_code"`
+	SubSubGroupCode int    `xml:"alim_ssssgrp_code"`
 }
 
 type FoodFile struct {

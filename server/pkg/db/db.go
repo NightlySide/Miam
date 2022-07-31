@@ -3,6 +3,7 @@ package db
 import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"io.github.nightlyside/miam/pkg/ciqual"
 )
 
 func ConnectDB() (*gorm.DB, error) {
@@ -13,4 +14,8 @@ func ConnectDB() (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+func Migrate(db *gorm.DB) error {
+	return db.AutoMigrate(ciqual.Food{}, ciqual.Component{}, ciqual.Composition{}, ciqual.FoodGroup{}, ciqual.Source{})
 }
