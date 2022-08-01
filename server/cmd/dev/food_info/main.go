@@ -2,12 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"path/filepath"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"io.github.nightlyside/miam/pkg/api"
 	"io.github.nightlyside/miam/pkg/ciqual"
 	"io.github.nightlyside/miam/pkg/config"
 	"io.github.nightlyside/miam/pkg/db"
@@ -40,37 +39,7 @@ func main() {
 	log.Info("\n" + food.Info())
 }
 
-type Food struct {
-	ciqual.Food
-	Group       ciqual.FoodGroup
-	Composition []ciqual.Composition
-	Components  map[int]ciqual.Component
-}
-
-func (f *Food) Info() string {
-	res := ""
-
-	// infos
-	res += "Name: " + f.NameFr + "\n"
-	res += "Group: " + f.Group.NameFr + "\n"
-	res += "Sub-group: " + f.Group.SubGroupNameFr + "\n"
-	res += "Sub-sub-group: " + f.Group.SubSubGroupNameFr + "\n"
-
-	// composition
-	res += "Composition:\n"
-	for _, compo := range f.Composition {
-		if strings.TrimSpace(compo.Content) == "-" {
-			continue
-		}
-
-		component := f.Components[compo.ComponentCode]
-		res += fmt.Sprintf("\t%-50s: %s\n", component.NameFr, compo.Content)
-	}
-
-	return res
-}
-
-func FoodFromName(db *gorm.DB, name string) *Food {
+func FoodFromName(db *gorm.DB, name string) *api.Food {
 	var food ciqual.Food
 	db.First(&food, "name_fr = ?", name)
 
@@ -87,7 +56,7 @@ func FoodFromName(db *gorm.DB, name string) *Food {
 		components[compo.ComponentCode] = component
 	}
 
-	return &Food{
+	return &api.Food{
 		Food:        food,
 		Group:       group,
 		Composition: composition,
