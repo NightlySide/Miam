@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v9"
-	"io.github.nightlyside/miam/pkg/api"
 	"io.github.nightlyside/miam/pkg/ciqual"
+	"io.github.nightlyside/miam/pkg/models"
 )
 
 func (db *Database) GetFoodNames(lang string) ([]string, error) {
@@ -48,13 +48,13 @@ func (db *Database) GetFoodNames(lang string) ([]string, error) {
 	return names, nil
 }
 
-func (db *Database) FoodFromName(name string) (*api.Food, error) {
+func (db *Database) FoodFromName(name string) (*models.Food, error) {
 	var FUNC_KEY = "food_from_name_" + name
 
 	// check if not already in cache
 	item_json, err := db.Redis.Get(FUNC_KEY).Bytes()
 	if err == nil {
-		var item api.Food
+		var item models.Food
 		err = json.Unmarshal(item_json, &item)
 		if err != nil {
 			return nil, err
@@ -94,7 +94,69 @@ func (db *Database) FoodFromName(name string) (*api.Food, error) {
 		components[compo.ComponentCode] = component
 	}
 
-	api_food := &api.Food{
+	api_food := &models.Food{
+		Food:        food,
+		Group:       group,
+		Composition: composition,
+		Components:  components,
+	}
+
+	api_food_json, err := json.Marshal(api_food)
+	if err != nil {
+		return nil, err
+	}
+	db.Redis.Set(FUNC_KEY, api_food_json, redis.KeepTTL)
+
+	return api_food, nil
+}
+
+func (db *Database) FoodFromCode(code string) (*models.Food, error) {
+	var FUNC_KEY = "food_from_code_" + code
+
+	// check if not already in cache
+	item_json, err := db.Redis.Get(FUNC_KEY).Bytes()
+	if err == nil {
+		var item models.Food
+		err = json.Unmarshal(item_json, &item)
+		if err != nil {
+			return nil, err
+		}
+		return &item, nil
+	}
+
+	// not found, let's fetch the data
+	var food ciqual.Food
+	err = db.First(&food, "code = ?", code).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var group ciqual.FoodGroup
+	err = db.First(&group, "code = ? AND sub_group_code = ? AND sub_sub_group_code = ?", food.GroupCode, food.SubGroupCode, food.SubSubGroupCode).Error
+	if err != nil && err.Error() == "record not found" {
+		err = db.First(&group, "code = ? AND sub_group_code = ?", food.GroupCode, food.SubGroupCode).Error
+		if err.Error() == "record not found" {
+			err = db.First(&group, "code = ?", food.GroupCode).Error
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	var composition []ciqual.Composition
+	err = db.Model(&ciqual.Composition{}).Where("food_code = ? AND content <> '-'", food.Code).Scan(&composition).Error
+	if err != nil {
+		return nil, err
+	}
+
+	components := map[int]ciqual.Component{}
+	for _, compo := range composition {
+		var component ciqual.Component
+		db.First(&component, "code = ?", compo.ComponentCode)
+		components[compo.ComponentCode] = component
+	}
+
+	api_food := &models.Food{
 		Food:        food,
 		Group:       group,
 		Composition: composition,

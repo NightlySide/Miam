@@ -1,38 +1,22 @@
 package api
 
 import (
-	"fmt"
-	"strings"
+	"net/http"
 
-	"io.github.nightlyside/miam/pkg/ciqual"
+	"github.com/labstack/echo/v4"
 )
 
-type Food struct {
-	ciqual.Food
-	Group       ciqual.FoodGroup
-	Composition []ciqual.Composition
-	Components  map[int]ciqual.Component
-}
-
-func (f *Food) Info() string {
-	res := ""
-
-	// infos
-	res += "Name: " + f.NameFr + "\n"
-	res += "Group: " + f.Group.NameFr + "\n"
-	res += "Sub-group: " + f.Group.SubGroupNameFr + "\n"
-	res += "Sub-sub-group: " + f.Group.SubSubGroupNameFr + "\n"
-
-	// composition
-	res += "Composition:\n"
-	for _, compo := range f.Composition {
-		if strings.TrimSpace(compo.Content) == "-" {
-			continue
-		}
-
-		component := f.Components[compo.ComponentCode]
-		res += fmt.Sprintf("\t%-50s: %s\n", component.NameFr, compo.Content)
+func (h *Handler) GetFoodFromCode(c echo.Context) error {
+	code := c.Param("code")
+	food, err := h.DB.FoodFromCode(code)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Response{
+			Status: false,
+			Error:  err.Error(),
+		})
 	}
-
-	return res
+	return c.JSON(http.StatusOK, Response{
+		Status: true,
+		Data:   food,
+	})
 }

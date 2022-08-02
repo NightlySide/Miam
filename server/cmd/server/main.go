@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io.github.nightlyside/miam/pkg/api"
 	"io.github.nightlyside/miam/pkg/config"
+	"io.github.nightlyside/miam/pkg/db"
 )
 
 var ConfigPathFlag = flag.String("config", "", "config file path")
@@ -21,11 +22,25 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// create router
-	router := api.CreateRouter(cfg)
+	// create handler
+	conn, err := db.ConnectDB(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	handler := &api.Handler{
+		Config: cfg,
+		DB:     conn,
+	}
+
+	// create router and server
+	router := api.CreateRouter(handler)
+	listenOn := fmt.Sprintf("%s:%d", cfg.Api.Host, cfg.Api.Port)
+	srv := &http.Server{
+		Addr:    listenOn,
+		Handler: router,
+	}
 
 	// start server
-	listenOn := fmt.Sprintf("%s:%d", cfg.Api.Host, cfg.Api.Port)
-	log.Infof("Starting server of %s", listenOn)
-	http.ListenAndServe(listenOn, router)
+	log.Infof("Starting server on %s", listenOn)
+	log.Fatal(srv.ListenAndServe())
 }

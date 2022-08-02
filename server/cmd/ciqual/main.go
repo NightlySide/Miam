@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -77,6 +78,13 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		// Trimspace
+		for k := range foodfile.FoodList {
+			foodfile.FoodList[k].NameFr = strings.TrimSpace(foodfile.FoodList[k].NameFr)
+			foodfile.FoodList[k].NameEng = strings.TrimSpace(foodfile.FoodList[k].NameEng)
+		}
+
 		err = conn.CreateInBatches(foodfile.FoodList, 1000).Error
 		if err != nil {
 			log.Fatal(err)
@@ -94,6 +102,17 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		// Trimspace
+		for k := range foodgroupfile.FoodGroupList {
+			foodgroupfile.FoodGroupList[k].NameFr = strings.TrimSpace(foodgroupfile.FoodGroupList[k].NameFr)
+			foodgroupfile.FoodGroupList[k].NameEng = strings.TrimSpace(foodgroupfile.FoodGroupList[k].NameEng)
+			foodgroupfile.FoodGroupList[k].SubGroupNameFr = strings.TrimSpace(foodgroupfile.FoodGroupList[k].SubGroupNameFr)
+			foodgroupfile.FoodGroupList[k].SubGroupNameEng = strings.TrimSpace(foodgroupfile.FoodGroupList[k].SubGroupNameEng)
+			foodgroupfile.FoodGroupList[k].SubSubGroupNameFr = strings.TrimSpace(foodgroupfile.FoodGroupList[k].SubSubGroupNameFr)
+			foodgroupfile.FoodGroupList[k].SubSubGroupNameEng = strings.TrimSpace(foodgroupfile.FoodGroupList[k].SubSubGroupNameEng)
+		}
+
 		err = conn.CreateInBatches(foodgroupfile.FoodGroupList, 1000).Error
 		if err != nil {
 			log.Fatal(err)
@@ -111,6 +130,13 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		// Trimspace
+		for k := range compofile.ComponentList {
+			compofile.ComponentList[k].NameEng = strings.TrimSpace(compofile.ComponentList[k].NameEng)
+			compofile.ComponentList[k].NameFr = strings.TrimSpace(compofile.ComponentList[k].NameFr)
+		}
+
 		err = conn.CreateInBatches(compofile.ComponentList, 1000).Error
 		if err != nil {
 			log.Fatal(err)
@@ -128,6 +154,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		err = conn.CreateInBatches(sourcefile.SourceList, 1000).Error
 		if err != nil {
 			log.Fatal(err)
@@ -145,6 +172,15 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		// Trimspace
+		for k := range compositionfile.CompositionList {
+			compositionfile.CompositionList[k].Content = strings.TrimSpace(compositionfile.CompositionList[k].Content)
+			compositionfile.CompositionList[k].Min = strings.TrimSpace(compositionfile.CompositionList[k].Min)
+			compositionfile.CompositionList[k].Max = strings.TrimSpace(compositionfile.CompositionList[k].Max)
+			compositionfile.CompositionList[k].TrustCode = strings.TrimSpace(compositionfile.CompositionList[k].TrustCode)
+		}
+
 		err = conn.CreateInBatches(compositionfile.CompositionList, 1000).Error
 		if err != nil {
 			log.Fatal(err)

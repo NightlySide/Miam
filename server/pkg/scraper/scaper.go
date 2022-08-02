@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/sirupsen/logrus"
 )
 
 func NewRequest(url string) *http.Request {
@@ -43,6 +44,7 @@ func Scrape(url string) (*ScrapedRecipe, error) {
 
 	// find the data
 	jsonMetadata := doc.Find("script[type=\"application/ld+json\"]").First().Text()
+	logrus.Debugf("Recipe json+ld: %s", jsonMetadata)
 	var recipe ScrapedRecipe
 	err = json.Unmarshal([]byte(jsonMetadata), &recipe)
 	if err != nil {
