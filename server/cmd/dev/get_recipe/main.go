@@ -20,7 +20,7 @@ func main() {
 	}
 
 	var recipe db.Recipe
-	err = conn.Model(&recipe).Preload("Ingredients").Preload("Steps").Preload("Diet").First(&recipe).Error
+	err = conn.Model(&recipe).Preload("Ingredients").Preload("Steps").Preload("Diet").First(&recipe, "id = 2").Error
 	if err != nil {
 		logrus.Fatal(err)
 	}

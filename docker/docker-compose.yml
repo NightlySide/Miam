@@ -1,15 +1,6 @@
 version: "3.8"
 
 services:
-
-  # db:
-  #   image: mariadb
-  #   restart: always
-  #   environment:
-  #     MARIADB_ROOT_PASSWORD: root
-  #   ports:
-  #     - 3306:3306
-
   db:
     image: postgres:alpine
     restart: always
@@ -17,6 +8,12 @@ services:
       POSTGRES_PASSWORD: root
     ports:
       - 5432:5432
+
+  redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - 6379:6379
 
   adminer:
     image: adminer

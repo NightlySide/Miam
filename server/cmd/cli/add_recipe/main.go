@@ -24,6 +24,7 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
+	logrus.SetLevel(logrus.DebugLevel)
 
 	// ----- Get recipe URL
 
@@ -37,6 +38,7 @@ func main() {
 	}
 
 	// ----- Get infos from URL
+	logrus.Debug("Get infos from url")
 	scrapedRecipe, err := scraper.Scrape(url)
 	if err != nil {
 		logrus.Fatal(err)
@@ -53,24 +55,24 @@ func main() {
 	}
 
 	// ------ check ingredient with db
+	logrus.Debug("Load config")
 	cfg, err := config.LoadConfig(*ConfigPath)
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	logrus.Debug("Connect to db")
 	conn, err := db.ConnectDB(cfg)
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Fatalf("connectdb :%w", err)
 	}
-	// err = conn.Migrate()
-	// if err != nil {
-	// 	logrus.Fatal(err)
-	// }
+	logrus.Debug("Get food names list")
 	food_names, err := conn.GetFoodNames("fr")
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
 	// for each found ingredient
+	logrus.Debug("Process food items")
 	foods := []db.Ingredient{}
 	for _, ing := range ingredients {
 		matches := utils.Autocomplete(ing.Ingredient, food_names)

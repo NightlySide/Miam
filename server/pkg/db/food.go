@@ -1,9 +1,10 @@
 package db
 
 import (
+	"encoding/json"
 	"fmt"
 
-	"github.com/patrickmn/go-cache"
+	"github.com/go-redis/redis/v9"
 	"io.github.nightlyside/miam/pkg/api"
 	"io.github.nightlyside/miam/pkg/ciqual"
 )
@@ -22,19 +23,27 @@ func (db *Database) GetFoodNames(lang string) ([]string, error) {
 	}
 
 	// check if not already in cache
-	food_names, found := db.Cache.Get(FUNC_KEY)
-	if found {
-		db.Cache.Set(FUNC_KEY, food_names, cache.DefaultExpiration)
-		return food_names.([]string), nil
+	food_names_json, err := db.Redis.Get(FUNC_KEY).Bytes()
+	if err == nil {
+		var food_names []string
+		err = json.Unmarshal(food_names_json, &food_names)
+		if err != nil {
+			return nil, err
+		}
+		return food_names, nil
 	}
 
 	// not in cache, fetch data
 	var names []string
-	err := db.Model(&ciqual.Food{}).Select(selector).Scan(&names).Error
+	err = db.Model(&ciqual.Food{}).Select(selector).Scan(&names).Error
 	if err != nil {
 		return nil, err
 	}
-	db.Cache.Set(FUNC_KEY, names, cache.DefaultExpiration)
+	names_json, err := json.Marshal(names)
+	if err != nil {
+		return nil, err
+	}
+	db.Redis.Set(FUNC_KEY, names_json, redis.KeepTTL)
 
 	return names, nil
 }
@@ -43,15 +52,19 @@ func (db *Database) FoodFromName(name string) (*api.Food, error) {
 	var FUNC_KEY = "food_from_name_" + name
 
 	// check if not already in cache
-	item, found := db.Cache.Get(FUNC_KEY)
-	if found {
-		db.Cache.Set(FUNC_KEY, item, cache.DefaultExpiration)
-		return item.(*api.Food), nil
+	item_json, err := db.Redis.Get(FUNC_KEY).Bytes()
+	if err == nil {
+		var item api.Food
+		err = json.Unmarshal(item_json, &item)
+		if err != nil {
+			return nil, err
+		}
+		return &item, nil
 	}
 
 	// not found, let's fetch the data
 	var food ciqual.Food
-	err := db.First(&food, "name_fr = ?", name).Error
+	err = db.First(&food, "name_fr = ?", name).Error
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +100,12 @@ func (db *Database) FoodFromName(name string) (*api.Food, error) {
 		Composition: composition,
 		Components:  components,
 	}
-	db.Cache.Set(FUNC_KEY, api_food, cache.DefaultExpiration)
+
+	api_food_json, err := json.Marshal(api_food)
+	if err != nil {
+		return nil, err
+	}
+	db.Redis.Set(FUNC_KEY, api_food_json, redis.KeepTTL)
 
 	return api_food, nil
 }

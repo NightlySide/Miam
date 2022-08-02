@@ -2,9 +2,8 @@ package db
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/patrickmn/go-cache"
+	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -14,11 +13,11 @@ import (
 
 type Database struct {
 	gorm.DB
-	Cache cache.Cache
+	Redis redis.Client
 }
 
 func ConnectDB(cfg *config.Config) (*Database, error) {
-	// dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", cfg.Database.Username, cfg.Database.Password, cfg.Database.Host, cfg.Database.Port, cfg.Database.Database)
+	// Connect to database
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Europe/Paris", cfg.Database.Host, cfg.Database.Username, cfg.Database.Password, cfg.Database.Database, cfg.Database.Port)
 	log.Debugf("DSN: %s", dsn)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
@@ -29,9 +28,16 @@ func ConnectDB(cfg *config.Config) (*Database, error) {
 		return nil, err
 	}
 
+	// Connect to redis
+	redc := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", cfg.Redis.Host, cfg.Redis.Port),
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.Database,
+	})
+
 	return &Database{
 		DB:    *db,
-		Cache: *cache.New(10*time.Minute, 20*time.Minute),
+		Redis: *redc,
 	}, nil
 }
 
