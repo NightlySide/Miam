@@ -26,7 +26,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	names, err := db.GetFoodNames(conn, "fr")
+	names, err := conn.GetFoodNames("fr")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -2,7 +2,9 @@ package db
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -10,7 +12,12 @@ import (
 	"io.github.nightlyside/miam/pkg/config"
 )
 
-func ConnectDB(cfg *config.Config) (*gorm.DB, error) {
+type Database struct {
+	gorm.DB
+	Cache cache.Cache
+}
+
+func ConnectDB(cfg *config.Config) (*Database, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", cfg.Database.Username, cfg.Database.Password, cfg.Database.Host, cfg.Database.Port, cfg.Database.Database)
 	log.Debugf("DSN: %s", dsn)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
@@ -20,9 +27,12 @@ func ConnectDB(cfg *config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	return db, nil
+	return &Database{
+		DB:    *db,
+		Cache: *cache.New(10*time.Minute, 20*time.Minute),
+	}, nil
 }
 
-func Migrate(db *gorm.DB) error {
+func (db *Database) Migrate() error {
 	return db.AutoMigrate(ciqual.Food{}, ciqual.Component{}, ciqual.Composition{}, ciqual.FoodGroup{}, ciqual.Source{})
 }

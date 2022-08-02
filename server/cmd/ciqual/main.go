@@ -36,7 +36,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = db.Migrate(conn)
+	err = conn.Migrate()
 	if err != nil {
 		log.Fatal(err)
 	}
