@@ -56,7 +56,7 @@ func ParseIngredient(raw string) (*Ingredient, error) {
 		return &Ingredient{
 			Quantity:   quantity,
 			Unit:       unit,
-			Ingredient: ing,
+			Ingredient: strings.TrimSpace(ing),
 		}, nil
 	}
 }

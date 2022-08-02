@@ -32,6 +32,9 @@ func main() {
 
 	match := utils.Autocomplete(*Searchflag, names)[0]
 
-	food := conn.FoodFromName(match)
+	food, err := conn.FoodFromName(match)
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Info("\n" + food.Info())
 }

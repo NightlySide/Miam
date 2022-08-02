@@ -36,7 +36,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = conn.Migrate()
+	err = conn.CiqualMigrate()
 	if err != nil {
 		log.Fatal(err)
 	}

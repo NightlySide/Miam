@@ -3,7 +3,7 @@ package main
 import (
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"io.github.nightlyside/miam/pkg/config"
 	"io.github.nightlyside/miam/pkg/db"
 )
@@ -11,16 +11,19 @@ import (
 func main() {
 	cfg, err := config.LoadConfig(filepath.Join("..", "config", "config.toml"))
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	conn, err := db.ConnectDB(cfg)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
-	// start the migration
-	if err = conn.RecipeMigrate(); err != nil {
-		log.Fatal(err)
+	var recipe db.Recipe
+	err = conn.Model(&recipe).Preload("Ingredients").Preload("Steps").Preload("Diet").First(&recipe).Error
+	if err != nil {
+		logrus.Fatal(err)
 	}
+
+	logrus.Infof("\n%s", recipe.Info())
 }

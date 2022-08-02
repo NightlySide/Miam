@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/erikgeiser/promptkit/selection"
 	"github.com/erikgeiser/promptkit/textinput"
@@ -36,14 +37,14 @@ func main() {
 	}
 
 	// ----- Get infos from URL
-	recipe, err := scraper.Scrape(url)
+	scrapedRecipe, err := scraper.Scrape(url)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
 	// parse ingredients
 	ingredients := []*scraper.Ingredient{}
-	for _, rawIng := range recipe.RecipeIngredient {
+	for _, rawIng := range scrapedRecipe.RecipeIngredient {
 		ing, err := scraper.ParseIngredient(rawIng)
 		if err != nil {
 			logrus.Fatal(err)
@@ -60,15 +61,25 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	// err = conn.Migrate()
+	// if err != nil {
+	// 	logrus.Fatal(err)
+	// }
 	food_names, err := conn.GetFoodNames("fr")
 	if err != nil {
 		logrus.Fatal(err)
 	}
+
+	// for each found ingredient
+	foods := []db.Ingredient{}
 	for _, ing := range ingredients {
 		matches := utils.Autocomplete(ing.Ingredient, food_names)
 		if len(matches) == 0 {
-			logrus.Errorf("no match found for \"%s\"", ing.Ingredient)
-			continue
+			matches = utils.Autocomplete(strings.Split(ing.Ingredient, " ")[0], food_names)
+			if len(matches) == 0 {
+				logrus.Errorf("no match found for \"%s\"", ing.Ingredient)
+				continue
+			}
 		}
 
 		// matches = matches[:int(math.Min(10., float64(len(matches))))]
@@ -80,11 +91,49 @@ func main() {
 		sp := selection.New(fmt.Sprintf("Pick an ingredient for: \"%s\"", ing.Ingredient), choices)
 		sp.PageSize = 5
 
+		// get the user choice
 		choice, err := sp.RunPrompt()
 		if err != nil {
 			logrus.Fatal(err)
 		}
-		logrus.Info(choice)
+
+		// get the ingredient from this choice
+		food, err := conn.FoodFromName(choice.Value.(string))
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		foods = append(foods, db.Ingredient{
+			Quantity: ing.Quantity,
+			Unit:     ing.Unit,
+			FoodCode: food.Code,
+		})
 	}
 
+	// extract steps
+	steps := []db.Step{}
+	for _, instr := range scrapedRecipe.RecipeInstructions {
+		steps = append(steps, db.Step{
+			Text: instr.Text,
+			// TODO: missing ingredients
+		})
+	}
+
+	// ----- build recipe
+	recipe := db.Recipe{
+		Name:        scrapedRecipe.Name,
+		Yield:       scrapedRecipe.RecipeYield,
+		Ingredients: foods,
+		Steps:       steps,
+		Description: scrapedRecipe.Description,
+		CookTime:    scrapedRecipe.CookTime,
+		PrepTime:    scrapedRecipe.PrepTime,
+		ImageURL:    scrapedRecipe.Image[0],
+	}
+
+	// ----- Save recipe to db
+	err = conn.Create(&recipe).Error
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	logrus.Infof("Recipe: \"%s\" added successfully", recipe.Name)
 }

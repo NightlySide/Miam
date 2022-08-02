@@ -39,25 +39,40 @@ func (db *Database) GetFoodNames(lang string) ([]string, error) {
 	return names, nil
 }
 
-func (db *Database) FoodFromName(name string) *api.Food {
+func (db *Database) FoodFromName(name string) (*api.Food, error) {
 	var FUNC_KEY = "food_from_name_" + name
 
 	// check if not already in cache
 	item, found := db.Cache.Get(FUNC_KEY)
 	if found {
 		db.Cache.Set(FUNC_KEY, item, cache.DefaultExpiration)
-		return item.(*api.Food)
+		return item.(*api.Food), nil
 	}
 
 	// not found, let's fetch the data
 	var food ciqual.Food
-	db.First(&food, "name_fr = ?", name)
+	err := db.First(&food, "name_fr = ?", name).Error
+	if err != nil {
+		return nil, err
+	}
 
 	var group ciqual.FoodGroup
-	db.First(&group, "code = ? AND sub_group_code = ? AND sub_sub_group_code = ?", food.GroupCode, food.SubGroupCode, food.SubSubGroupCode)
+	err = db.First(&group, "code = ? AND sub_group_code = ? AND sub_sub_group_code = ?", food.GroupCode, food.SubGroupCode, food.SubSubGroupCode).Error
+	if err != nil && err.Error() == "record not found" {
+		err = db.First(&group, "code = ? AND sub_group_code = ?", food.GroupCode, food.SubGroupCode).Error
+		if err.Error() == "record not found" {
+			err = db.First(&group, "code = ?", food.GroupCode).Error
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	var composition []ciqual.Composition
-	db.Model(&ciqual.Composition{}).Where("food_code = ?", food.Code).Scan(&composition)
+	err = db.Model(&ciqual.Composition{}).Where("food_code = ?", food.Code).Scan(&composition).Error
+	if err != nil {
+		return nil, err
+	}
 
 	components := map[int]ciqual.Component{}
 	for _, compo := range composition {
@@ -74,5 +89,5 @@ func (db *Database) FoodFromName(name string) *api.Food {
 	}
 	db.Cache.Set(FUNC_KEY, api_food, cache.DefaultExpiration)
 
-	return api_food
+	return api_food, nil
 }
