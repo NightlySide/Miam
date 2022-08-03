@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/go-redis/redis/v9"
 	"github.com/lib/pq"
@@ -105,7 +104,9 @@ func (db *Database) RecipeFromId(id string) (*models.Recipe, error) {
 		ingredients = append(ingredients, models.RecipeIngredient{
 			Quantity: ing.Quantity,
 			Unit:     ing.Unit,
-			Food:     *food,
+			Code:     food.Code,
+			NameFr:   food.NameFr,
+			NameEng:  food.NameEng,
 		})
 	}
 
@@ -121,36 +122,6 @@ func (db *Database) RecipeFromId(id string) (*models.Recipe, error) {
 			Text:            step.Text,
 			IngredientCodes: ingcodes,
 		})
-	}
-
-	// compute composition
-	composition := map[string]models.RecipeComposition{}
-	for _, ing := range ingredients {
-		for _, ing_compo := range ing.Food.Compositions {
-			raw_qty := strings.ReplaceAll(ing_compo.Content, ",", ".")
-			if strings.Contains(raw_qty, "<") || raw_qty == "traces" {
-				raw_qty = "0"
-			}
-
-			qty, err := strconv.ParseFloat(raw_qty, 64)
-			if err != nil {
-				return nil, err
-			}
-
-			// if not registered
-			if _, ok := composition[ing_compo.NameFr]; !ok {
-				composition[ing_compo.NameFr] = models.RecipeComposition{
-					NameFr:   ing_compo.NameFr,
-					NameEng:  ing_compo.NameEng,
-					Quantity: qty,
-					Unit:     ing_compo.NameFr, // TODO: find good unit
-				}
-			} else {
-				compo := composition[ing_compo.NameFr]
-				compo.Quantity += qty
-				composition[ing_compo.NameFr] = compo
-			}
-		}
 	}
 
 	api_recipe := &models.Recipe{
@@ -169,7 +140,6 @@ func (db *Database) RecipeFromId(id string) (*models.Recipe, error) {
 		},
 		Ingredients: ingredients,
 		Steps:       steps,
-		Composition: composition,
 	}
 
 	api_recipe_json, err := json.Marshal(api_recipe)
