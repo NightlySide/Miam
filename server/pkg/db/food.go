@@ -81,24 +81,36 @@ func (db *Database) FoodFromName(name string) (*models.Food, error) {
 		}
 	}
 
-	var composition []ciqual.Composition
-	err = db.Model(&ciqual.Composition{}).Where("food_code = ?", food.Code).Scan(&composition).Error
+	var ciqual_composition []ciqual.Composition
+	err = db.Model(&ciqual.Composition{}).Where("food_code = ? AND content <> '-'", food.Code).Scan(&ciqual_composition).Error
 	if err != nil {
 		return nil, err
 	}
 
-	components := map[int]ciqual.Component{}
-	for _, compo := range composition {
+	compositions := []models.Composition{}
+	for _, compo := range ciqual_composition {
 		var component ciqual.Component
 		db.First(&component, "code = ?", compo.ComponentCode)
-		components[compo.ComponentCode] = component
+		compositions = append(compositions, models.Composition{
+			NameFr:  component.NameFr,
+			NameEng: component.NameEng,
+			Content: compo.Content,
+			Min:     compo.Min,
+			Max:     compo.Max,
+		})
 	}
 
 	api_food := &models.Food{
-		Food:        food,
-		Group:       group,
-		Composition: composition,
-		Components:  components,
+		NameFr:             food.NameFr,
+		NameEng:            food.NameEng,
+		Code:               food.Code,
+		GroupNameFr:        group.NameFr,
+		GroupNameEng:       group.NameEng,
+		SubGroupNameFr:     group.SubGroupNameFr,
+		SubGroupNameEng:    group.SubGroupNameEng,
+		SubSubGroupNameFr:  group.SubSubGroupNameFr,
+		SubSubGroupNameEng: group.SubSubGroupNameEng,
+		Compositions:       compositions,
 	}
 
 	api_food_json, err := json.Marshal(api_food)
@@ -143,24 +155,36 @@ func (db *Database) FoodFromCode(code string) (*models.Food, error) {
 		}
 	}
 
-	var composition []ciqual.Composition
-	err = db.Model(&ciqual.Composition{}).Where("food_code = ? AND content <> '-'", food.Code).Scan(&composition).Error
+	var ciqual_composition []ciqual.Composition
+	err = db.Model(&ciqual.Composition{}).Where("food_code = ? AND content <> '-'", food.Code).Scan(&ciqual_composition).Error
 	if err != nil {
 		return nil, err
 	}
 
-	components := map[int]ciqual.Component{}
-	for _, compo := range composition {
+	compositions := []models.Composition{}
+	for _, compo := range ciqual_composition {
 		var component ciqual.Component
 		db.First(&component, "code = ?", compo.ComponentCode)
-		components[compo.ComponentCode] = component
+		compositions = append(compositions, models.Composition{
+			NameFr:  component.NameFr,
+			NameEng: component.NameEng,
+			Content: compo.Content,
+			Min:     compo.Min,
+			Max:     compo.Max,
+		})
 	}
 
 	api_food := &models.Food{
-		Food:        food,
-		Group:       group,
-		Composition: composition,
-		Components:  components,
+		NameFr:             food.NameFr,
+		NameEng:            food.NameEng,
+		Code:               food.Code,
+		GroupNameFr:        group.NameFr,
+		GroupNameEng:       group.NameEng,
+		SubGroupNameFr:     group.SubGroupNameFr,
+		SubGroupNameEng:    group.SubGroupNameEng,
+		SubSubGroupNameFr:  group.SubSubGroupNameFr,
+		SubSubGroupNameEng: group.SubSubGroupNameEng,
+		Compositions:       compositions,
 	}
 
 	api_food_json, err := json.Marshal(api_food)
